@@ -134,8 +134,32 @@ tests/           unit tests for every analytics + reporting module
 | 2 — Cohort analysis | ✅ | Retention matrix, heatmap, chi-squared + Bonferroni |
 | 3 — Funnel analysis | ✅ | Drop-off, A/B comparison, time-to-convert |
 | 4 — KPI dashboard | ✅ | KPI engine, Welford anomaly detection, Redis cache, Dash UI |
-| 5 — Reporting | 🚧 | GPT-4o summaries (wired), PDF/CSV, APScheduler digest |
-| 6 — Polish | 🚧 | NL→SQL RAG, query optimizer, JWT + RLS, Docker, CI |
+| 5 — Reporting | ✅ | Data-quality gate, GPT-4o summaries (optional key), PDF/CSV, APScheduler digest |
+| 6 — Polish | 🚧 | JWT auth + sandboxed ad-hoc queries ✅ · Docker/CI ✅ · pgvector NL→SQL and per-user RLS enforcement pending |
+
+### Live data path
+
+The API and dashboard read through a single data-access layer
+([`warehouse.py`](bizlens/warehouse.py)) that runs every query under the
+read-only analyst role and caches KPI cards + the revenue trend in Redis.
+
+```bash
+# with the Docker stack up (postgres + redis):
+python scripts/generate_sample_data.py     # today-anchored synthetic dataset
+python -m bizlens.sql.etl_pipeline         # load into Postgres
+uvicorn bizlens.api.main:app --port 8000   # API  → http://localhost:8000/docs
+python -m bizlens.dashboard.app            # UI   → http://localhost:8050
+```
+
+Get a token and run a sandboxed query:
+
+```bash
+TOKEN=$(curl -s -X POST localhost:8000/auth/token -d 'username=analyst&password=analyst' | jq -r .access_token)
+curl -s localhost:8000/kpi/cards | jq
+curl -s -X POST localhost:8000/query/adhoc -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' \
+     -d '{"sql":"SELECT segment, COUNT(*) FROM users GROUP BY segment"}' | jq
+```
 
 ## License
 

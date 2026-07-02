@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+blvenv/
+venv/
+.venv/
+env/
+
+# Environment / secrets
+.env
+*.local
+
+# Data & generated artifacts
+data/raw/*
+data/processed/*
+data/reports/*
+!data/**/.gitkeep
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Planning docs (not part of the shipped product)
+*.docx
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

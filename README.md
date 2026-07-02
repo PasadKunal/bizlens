@@ -1,0 +1,142 @@
+# BizLens
+
+**Self-hosted Business Intelligence & Analytics platform** — SQL-powered cohort
+analysis, funnel analysis, and KPI dashboards with statistical rigour and
+AI-generated reporting. Think a lightweight, self-hostable Metabase where
+*differences between cohorts are tested, not just displayed.*
+
+[![CI](https://github.com/PasadKunal/bizlens/actions/workflows/ci.yml/badge.svg)](https://github.com/PasadKunal/bizlens/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## Why BizLens
+
+Non-technical stakeholders can't answer business questions from data without an
+analyst; analysts burn hours on repetitive ad-hoc queries and reporting.
+BizLens self-serves both — with the statistical discipline (significance
+testing, multiple-comparison correction, data-quality gating) that most BI
+projects skip.
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  dashboard/  (Plotly Dash)                                         │
+│  KPI cards · retention heatmap · funnel chart · trend · NL→SQL     │
+├──────────────────────────────────────────────────────────────────┤
+│  api/  (FastAPI)                                                   │
+│  JWT auth → Postgres role · KPI / cohort / funnel / ad-hoc / report│
+├─────────────────┬──────────────────┬─────────────────────────────┤
+│  analytics/     │  sql/            │  reporting/                  │
+│  cohort ·funnel │  query library · │  data-quality gate ·         │
+│  kpi ·trend ·   │  ETL ·optimizer ·│  GPT-4o insights ·           │
+│  stats ·anomaly │  schema validate │  PDF/CSV ·APScheduler        │
+├─────────────────┴──────────────────┴─────────────────────────────┤
+│  Redis  (pre-aggregated KPI cache, 5-min refresh → sub-2s load)   │
+│  PostgreSQL + pgvector  (SELECT-only analyst role · RLS)          │
+│  Dataset: Brazilian Olist e-commerce (or synthetic generator)     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Features
+
+### SQL Analytics Engine
+- **Read-only analyst role** — all analytics run under a `SELECT`-only Postgres role; no query can mutate data ([`postgres_roles.sql`](bizlens/infra/postgres_roles.sql)).
+- **Pre-built query library** — retention curves, funnels, cohort tables, revenue, DAU/MAU/WAU ([`query_library.py`](bizlens/sql/query_library.py)).
+- **Query optimizer** — `EXPLAIN ANALYZE` parser that suggests composite-index candidates for sequential scans ([`query_optimizer.py`](bizlens/sql/query_optimizer.py)).
+
+### Cohort Analysis
+- **Retention matrix** — the full 12×12 cohort grid in one window-function query ([`cohort_analysis.py`](bizlens/analytics/cohort_analysis.py)).
+- **Significance testing between cohorts** — chi-squared with **Bonferroni** correction for multiple cohort comparisons.
+- **Churn-signal detection** — flags cohorts whose week-4 retention falls >2σ below baseline.
+
+### Funnel Analysis
+- Multi-step drop-off, **A/B funnel comparison** with significance testing, and time-to-convert distributions ([`funnel_analysis.py`](bizlens/analytics/funnel_analysis.py)).
+
+### KPI Dashboard
+- DAU/MAU/revenue/churn cards, moving-average trends, and **Welford online anomaly detection** — running mean/variance with *zero stored history* ([`anomaly.py`](bizlens/analytics/anomaly.py)).
+- **Redis caching** for sub-2s dashboard load.
+
+### Automated Reporting
+- Weekly digest with **GPT-4o narrative summaries** (graceful template fallback with no API key) ([`insight_generator.py`](bizlens/reporting/insight_generator.py)).
+- **Data-quality gate** — row counts, null-key checks, value bounds, spike detection — *no report ships on bad data* ([`data_quality_checker.py`](bizlens/reporting/data_quality_checker.py)).
+- PDF/CSV export, APScheduler delivery.
+
+### NL → SQL (RAG)
+- Ask *"weekly active users by country"* and get a **validated** pre-built query back — pgvector cosine match in production, token-overlap fallback offline ([`nl_to_sql.py`](bizlens/dashboard/nl_to_sql.py)).
+
+## Quick start (under 5 minutes)
+
+```bash
+# 1. Create and activate the virtual environment
+python -m venv blvenv && source blvenv/bin/activate
+
+# 2. Install
+pip install -r requirements-dev.txt && pip install -e .
+
+# 3. Generate a synthetic dataset (or drop the Olist CSVs into data/processed)
+python scripts/generate_sample_data.py
+
+# 4. Run the tests
+pytest
+
+# 5. Launch the dashboard (renders demo data if no DB is running)
+python -m bizlens.dashboard.app     # http://localhost:8050
+```
+
+### Full stack with Docker
+
+```bash
+cp .env.example .env
+docker compose -f bizlens/infra/docker-compose.yml up --build
+# API       → http://localhost:8000/docs
+# Dashboard → http://localhost:8050
+```
+
+## Design notes
+
+**Correlation ≠ causation.** BizLens surfaces *descriptive* findings (e.g. "paid
+users retain 34% worse than organic"). It deliberately does **not** claim
+causation — that requires an experiment or quasi-experimental design. Separating
+descriptive analysis from causal inference is a core statistical-maturity signal.
+
+**Why the read-only role?** Every analytics query runs through
+`ANALYST_DATABASE_URL`, a role with `SELECT` grants only. Combined with
+per-user Postgres roles and row-level security, this makes data leakage between
+users a database-enforced impossibility rather than an application convention.
+
+**Why Welford?** A live KPI stream shouldn't require storing full history to
+detect anomalies. Welford maintains running mean/variance in O(1) memory and
+flags points beyond 2.5σ — see [`test_anomaly.py`](tests/test_anomaly.py) for
+the equivalence check against NumPy.
+
+## Project layout
+
+```
+bizlens/
+├── analytics/   cohort · funnel · kpi · trend · statistical_tests · anomaly
+├── sql/         query_library · etl_pipeline · schema_validator · query_optimizer
+├── reporting/   data_quality_checker · insight_generator · report_builder · scheduler
+├── dashboard/   app · kpi_cards · retention_heatmap · funnel_chart · trend_chart · nl_to_sql
+├── api/         main (FastAPI routes) · auth (JWT + Postgres role)
+└── infra/       docker-compose · Dockerfile · postgres_roles.sql · render.yaml
+scripts/         generate_sample_data.py
+tests/           unit tests for every analytics + reporting module
+```
+
+## Roadmap
+
+| Phase | Status | Scope |
+|-------|--------|-------|
+| 1 — Data layer | ✅ | Postgres read-only role, ETL, schema validation, data-quality checks |
+| 2 — Cohort analysis | ✅ | Retention matrix, heatmap, chi-squared + Bonferroni |
+| 3 — Funnel analysis | ✅ | Drop-off, A/B comparison, time-to-convert |
+| 4 — KPI dashboard | ✅ | KPI engine, Welford anomaly detection, Redis cache, Dash UI |
+| 5 — Reporting | 🚧 | GPT-4o summaries (wired), PDF/CSV, APScheduler digest |
+| 6 — Polish | 🚧 | NL→SQL RAG, query optimizer, JWT + RLS, Docker, CI |
+
+## License
+
+MIT — see [LICENSE](LICENSE).

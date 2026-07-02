@@ -1,0 +1,32 @@
+# --- Core data stack ---
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+
+# --- Database & cache ---
+SQLAlchemy>=2.0
+psycopg[binary]>=3.1
+redis>=5.0
+pgvector>=0.2
+
+# --- API ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-jose[cryptography]>=3.3
+passlib[bcrypt]>=1.7
+pydantic>=2.6
+pydantic-settings>=2.2
+
+# --- Dashboard & viz ---
+dash>=2.16
+plotly>=5.20
+seaborn>=0.13
+matplotlib>=3.8
+
+# --- Reporting ---
+openai>=1.30
+reportlab>=4.1
+APScheduler>=3.10
+
+# --- Config ---
+python-dotenv>=1.0

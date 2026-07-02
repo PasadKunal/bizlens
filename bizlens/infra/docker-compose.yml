@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: bizlens
+      POSTGRES_PASSWORD: bizlens
+      POSTGRES_DB: bizlens
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres_roles.sql:/docker-entrypoint-initdb.d/10_roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bizlens"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: bizlens/infra/Dockerfile
+    command: uvicorn bizlens.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql+psycopg://bizlens:bizlens@postgres:5432/bizlens
+      ANALYST_DATABASE_URL: postgresql+psycopg://bizlens_readonly:readonly@postgres:5432/bizlens
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: bizlens/infra/Dockerfile
+    command: python -m bizlens.dashboard.app
+    environment:
+      ANALYST_DATABASE_URL: postgresql+psycopg://bizlens_readonly:readonly@postgres:5432/bizlens
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8050:8050"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

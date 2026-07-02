@@ -13,6 +13,35 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: bizlens
+          POSTGRES_PASSWORD: bizlens
+          POSTGRES_DB: bizlens
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bizlens"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+psycopg://bizlens:bizlens@localhost:5432/bizlens
+      ANALYST_DATABASE_URL: postgresql+psycopg://bizlens_readonly:readonly@localhost:5432/bizlens
+      REDIS_URL: redis://localhost:6379/0
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,8 +57,19 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: Lint (ruff)
-        run: ruff check bizlens tests
+      - name: Initialise database (pgvector, read-only role, grants)
+        run: python scripts/init_db.py
 
-      - name: Run tests
+      - name: Seed data and run ETL (loads + applies RLS)
+        run: |
+          python scripts/generate_sample_data.py
+          python -m bizlens.sql.etl_pipeline
+
+      - name: Build NL-to-SQL embeddings
+        run: python -m bizlens.sql.vector_store
+
+      - name: Lint (ruff)
+        run: ruff check bizlens tests scripts
+
+      - name: Run tests (unit + integration)
         run: pytest --cov=bizlens --cov-report=term-missing

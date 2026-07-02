@@ -20,7 +20,7 @@ from bizlens.analytics.funnel_analysis import FunnelStep, compute_funnel
 from bizlens.analytics.kpi_engine import KPICard
 from bizlens.dashboard.funnel_chart import funnel_chart
 from bizlens.dashboard.kpi_cards import kpi_row
-from bizlens.dashboard.nl_to_sql import match_query
+from bizlens.dashboard.nl_to_sql import resolve as resolve_nl
 from bizlens.dashboard.retention_heatmap import retention_heatmap
 from bizlens.dashboard.trend_chart import trend_chart
 
@@ -141,10 +141,11 @@ def build_app() -> Dash:
     def _resolve(question: str | None) -> str:
         if not question:
             return "Type a question to get a validated SQL query."
-        match = match_query(question)
+        match = resolve_nl(question)
         if not match:
             return "No matching query template found."
-        return f"-- {match.description} (match {match.score:.2f})\n{match.sql}"
+        return (f"-- {match.description}\n"
+                f"-- matched via {match.backend} (score {match.score:.2f})\n{match.sql}")
 
     return app
 

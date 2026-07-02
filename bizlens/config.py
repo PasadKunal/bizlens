@@ -44,15 +44,23 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     jwt_expiry_minutes: int = Field(default=60, alias="JWT_EXPIRY_MINUTES")
 
-    # A single built-in analyst account for local/dev use. In production this is
-    # replaced by a real user store; the account maps to the read-only PG role.
+    # Built-in analyst accounts for local/dev use. In production this is replaced
+    # by a real user store; both map to the read-only PG role but carry a
+    # different row-level-security scope (data-scoping demo).
+    #   analyst     -> scope ALL (sees every country)
+    #   analyst_br  -> scope BR  (sees only Brazil rows)
     dev_username: str = Field(default="analyst", alias="DEV_USERNAME")
     dev_password: str = Field(default="analyst", alias="DEV_PASSWORD")
+    dev_scoped_username: str = Field(default="analyst_br", alias="DEV_SCOPED_USERNAME")
+    dev_scoped_scope: str = Field(default="BR", alias="DEV_SCOPED_SCOPE")
     analyst_role: str = Field(default="bizlens_readonly", alias="ANALYST_ROLE")
 
     # --- OpenAI -------------------------------------------------------------
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o", alias="OPENAI_MODEL")
+
+    # NL-to-SQL embedding backend: "local" (hashing, offline) or "openai".
+    embed_backend: str = Field(default="local", alias="EMBED_BACKEND")
 
     # --- Anomaly detection --------------------------------------------------
     anomaly_sigma_threshold: float = Field(default=2.5, alias="ANOMALY_SIGMA")

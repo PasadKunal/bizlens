@@ -50,6 +50,7 @@ def ping(engine: Engine | None = None) -> bool:
 def sandboxed_query(
     sql: str,
     role: str | None = None,
+    scope: str | None = None,
     timeout_seconds: int | None = None,
     row_cap: int | None = None,
 ) -> pd.DataFrame:
@@ -58,7 +59,8 @@ def sandboxed_query(
     * ``statement_timeout`` aborts runaway queries server-side.
     * the query is wrapped in ``SELECT * FROM (...) LIMIT cap`` so an enormous
       result set can never be materialised, even if the caller omits a LIMIT.
-    * an optional ``SET ROLE`` supports per-user row-level security.
+    * ``scope`` sets the ``bizlens.scope`` session variable that the row-level
+      security policies filter on, so a scoped user only sees permitted rows.
 
     Only ``SELECT`` statements are accepted; anything else raises ``ValueError``.
     """
@@ -74,6 +76,10 @@ def sandboxed_query(
     engine = get_analyst_engine()
     with engine.connect() as conn:
         conn.execute(text(f"SET statement_timeout = {timeout_seconds * 1000}"))
-        if role:
-            conn.execute(text(f"SET ROLE {role}"))
+        if scope:
+            # set_config passes the value as a bound parameter (no injection).
+            conn.execute(
+                text("SELECT set_config('bizlens.scope', :scope, false)"),
+                {"scope": scope},
+            )
         return pd.read_sql(text(wrapped), conn)

@@ -28,10 +28,10 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(subject: str, pg_role: str) -> str:
+def create_access_token(subject: str, pg_role: str, scope: str = "ALL") -> str:
     settings = get_settings()
     expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_expiry_minutes)
-    payload = {"sub": subject, "role": pg_role, "exp": expire}
+    payload = {"sub": subject, "role": pg_role, "scope": scope, "exp": expire}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
@@ -48,4 +48,8 @@ async def current_user(token: str | None = Depends(oauth2_scheme)) -> dict:
         payload = decode_token(token)
     except JWTError as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token") from exc
-    return {"username": payload.get("sub"), "pg_role": payload.get("role")}
+    return {
+        "username": payload.get("sub"),
+        "pg_role": payload.get("role"),
+        "scope": payload.get("scope", "ALL"),
+    }

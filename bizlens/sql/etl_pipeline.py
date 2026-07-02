@@ -45,14 +45,35 @@ def load_table(table: str, df: pd.DataFrame, engine: Engine, if_exists: str = "r
     return len(df)
 
 
-def run(data_dir: str | Path = "data/processed", engine: Engine | None = None) -> dict[str, int]:
-    """Run the full ETL for all known tables. Returns per-table row counts."""
+def run(
+    data_dir: str | Path = "data/processed",
+    engine: Engine | None = None,
+    apply_row_level_security: bool = True,
+) -> dict[str, int]:
+    """Run the full ETL for all known tables. Returns per-table row counts.
+
+    ``country`` is denormalised from users onto events and orders so the
+    row-level-security policy can scope every table uniformly. RLS is applied
+    at the end (each replace drops the table and its policies).
+    """
     data_dir = Path(data_dir)
     engine = engine or get_engine()
     counts: dict[str, int] = {}
-    for table in TABLES:
+
+    users = load_csv("users", data_dir)
+    counts["users"] = load_table("users", users, engine)
+    country_map = users[["user_id", "country"]]
+
+    for table in ("events", "orders"):
         df = load_csv(table, data_dir)
+        if "country" not in df.columns:
+            df = df.merge(country_map, on="user_id", how="left")
         counts[table] = load_table(table, df, engine)
+
+    if apply_row_level_security:
+        from bizlens.sql.rls import apply_rls
+
+        apply_rls(engine)
     return counts
 
 

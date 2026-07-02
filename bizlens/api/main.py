@@ -44,14 +44,25 @@ def health() -> dict:
 
 @app.post("/auth/token")
 def login(form: OAuth2PasswordRequestForm = Depends()) -> dict:
-    """Issue a JWT for the built-in analyst account (dev user store)."""
+    """Issue a JWT for a built-in analyst account (dev user store).
+
+    ``analyst`` carries RLS scope ALL; ``analyst_br`` carries scope BR — both
+    share the dev password, to demo per-user data scoping.
+    """
     settings = get_settings()
-    ok_user = secrets.compare_digest(form.username, settings.dev_username)
-    ok_pass = secrets.compare_digest(form.password, settings.dev_password)
-    if not (ok_user and ok_pass):
+    if secrets.compare_digest(form.username, settings.dev_username):
+        scope = "ALL"
+    elif secrets.compare_digest(form.username, settings.dev_scoped_username):
+        scope = settings.dev_scoped_scope
+    else:
         raise HTTPException(401, "incorrect username or password")
-    token = create_access_token(subject=form.username, pg_role=settings.analyst_role)
-    return {"access_token": token, "token_type": "bearer"}
+    if not secrets.compare_digest(form.password, settings.dev_password):
+        raise HTTPException(401, "incorrect username or password")
+
+    token = create_access_token(
+        subject=form.username, pg_role=settings.analyst_role, scope=scope
+    )
+    return {"access_token": token, "token_type": "bearer", "scope": scope}
 
 
 @app.get("/queries")
@@ -105,11 +116,12 @@ def adhoc_query(req: AdhocQueryRequest, user: dict = Depends(current_user)) -> d
     enforced in :func:`bizlens.db.sandboxed_query`.
     """
     try:
-        df = sandboxed_query(req.sql, role=user.get("pg_role"))
+        df = sandboxed_query(req.sql, role=user.get("pg_role"), scope=user.get("scope"))
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     return {
         "user": user["username"],
+        "scope": user.get("scope"),
         "row_count": len(df),
         "columns": list(df.columns),
         "rows": df.to_dict(orient="records"),

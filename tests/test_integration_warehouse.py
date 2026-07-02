@@ -48,3 +48,24 @@ def test_sandbox_row_cap():
     # The wrapper LIMIT must cap results regardless of the inner query.
     df = sandboxed_query("SELECT * FROM events", row_cap=5)
     assert len(df) <= 5
+
+
+def test_rls_scope_isolation():
+    # A scoped user sees only their scope's rows, and cannot escape it even by
+    # naming another scope in the WHERE clause — enforced by Postgres.
+    all_countries = set(sandboxed_query("SELECT DISTINCT country FROM users", scope="ALL")["country"])
+    br = set(sandboxed_query("SELECT DISTINCT country FROM users", scope="BR")["country"])
+    assert len(all_countries) > 1
+    assert br == {"BR"}
+    escaped = sandboxed_query("SELECT * FROM users WHERE country = 'US'", scope="BR")
+    assert len(escaped) == 0
+
+
+def test_pgvector_semantic_search():
+    from bizlens.sql import vector_store
+
+    if not vector_store.is_built():
+        pytest.skip("embeddings not built")
+    hits = vector_store.search("weekly active users by country", k=1)
+    assert hits and hits[0]["name"] == "wau_by_country"
+    assert 0.0 <= hits[0]["similarity"] <= 1.0001

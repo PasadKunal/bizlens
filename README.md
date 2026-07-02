@@ -65,7 +65,10 @@ projects skip.
 - PDF/CSV export, APScheduler delivery.
 
 ### NL → SQL (RAG)
-- Ask *"weekly active users by country"* and get a **validated** pre-built query back — pgvector cosine match in production, token-overlap fallback offline ([`nl_to_sql.py`](bizlens/dashboard/nl_to_sql.py)).
+- Ask *"how much money came from different sources"* and get a **validated** pre-built query back. The query library is embedded into a **pgvector** table and matched by cosine distance (`<=>`, HNSW index); a local hashing embedder keeps it working offline/in CI, with an OpenAI backend for true semantics ([`vector_store.py`](bizlens/sql/vector_store.py), [`embeddings.py`](bizlens/nlp/embeddings.py)).
+
+### Multi-user data scoping (row-level security)
+- Each user's JWT carries a **scope**; the ad-hoc sandbox sets a Postgres session variable that RLS policies filter on. A `BR`-scoped user cannot read another region's rows **even with a hand-crafted `WHERE` clause** — the filter is enforced by Postgres, not the app ([`rls.py`](bizlens/sql/rls.py)). Try it: log in as `analyst` (all regions) vs `analyst_br` (Brazil only).
 
 ## Quick start (under 5 minutes)
 
@@ -135,7 +138,7 @@ tests/           unit tests for every analytics + reporting module
 | 3 — Funnel analysis | ✅ | Drop-off, A/B comparison, time-to-convert |
 | 4 — KPI dashboard | ✅ | KPI engine, Welford anomaly detection, Redis cache, Dash UI |
 | 5 — Reporting | ✅ | Data-quality gate, GPT-4o summaries (optional key), PDF/CSV, APScheduler digest |
-| 6 — Polish | 🚧 | JWT auth + sandboxed ad-hoc queries ✅ · Docker/CI ✅ · pgvector NL→SQL and per-user RLS enforcement pending |
+| 6 — Polish | ✅ | JWT auth + sandboxed ad-hoc queries · pgvector NL→SQL · per-user RLS enforcement · real Olist loader · Postgres-in-CI |
 
 ### Live data path
 
@@ -145,8 +148,12 @@ read-only analyst role and caches KPI cards + the revenue trend in Redis.
 
 ```bash
 # with the Docker stack up (postgres + redis):
+python scripts/init_db.py                  # pgvector + read-only role + grants
 python scripts/generate_sample_data.py     # today-anchored synthetic dataset
-python -m bizlens.sql.etl_pipeline         # load into Postgres
+#   …or use the real Kaggle data (drop the CSVs into data/raw/olist first):
+#   python -m bizlens.sql.olist_loader --raw data/raw/olist --out data/processed
+python -m bizlens.sql.etl_pipeline         # load into Postgres, apply RLS
+python -m bizlens.sql.vector_store         # build the NL→SQL embeddings
 uvicorn bizlens.api.main:app --port 8000   # API  → http://localhost:8000/docs
 python -m bizlens.dashboard.app            # UI   → http://localhost:8050
 ```

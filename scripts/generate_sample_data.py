@@ -22,10 +22,14 @@ def generate(n_users: int = 5000, seed: int = 42, out_dir: str | Path = "data/pr
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Anchor the dataset to "today" so trailing-window KPIs (DAU/MAU, last-90-day
+    # revenue) return live data whenever the demo is run. Signups span the last
+    # ~180 days: recent cohorts drive current activity, older cohorts give full
+    # 12-week retention curves.
+    today = pd.Timestamp.today().normalize()
+
     # --- users --------------------------------------------------------------
-    signup = pd.to_datetime("2024-01-01") + pd.to_timedelta(
-        rng.integers(0, 84, n_users), unit="D"
-    )
+    signup = today - pd.to_timedelta(rng.integers(0, 180, n_users), unit="D")
     channel = rng.choice(CHANNELS, n_users, p=[0.4, 0.3, 0.2, 0.1])
     users = pd.DataFrame(
         {
@@ -48,6 +52,8 @@ def generate(n_users: int = 5000, seed: int = 42, out_dir: str | Path = "data/pr
                 n_ev = rng.integers(1, 6)
                 for _ in range(n_ev):
                     day = u.signup_date + pd.Timedelta(weeks=week, days=int(rng.integers(0, 7)))
+                    if day > today:  # don't emit events in the future
+                        continue
                     event_rows.append((u.user_id, day, rng.choice(
                         ["visit", "product_view", "add_to_cart", "checkout", "purchase"],
                         p=[0.4, 0.3, 0.15, 0.09, 0.06])))

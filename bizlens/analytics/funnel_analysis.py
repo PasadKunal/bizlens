@@ -84,15 +84,25 @@ def funnel_sql(
     events_table: str, step_events: list[str],
     user_col: str = "user_id", event_col: str = "event_name",
 ) -> str:
-    """Build SQL counting distinct users reaching each ordered funnel step."""
-    ctes = []
-    for i, ev in enumerate(step_events):
+    """Build SQL counting users who reached each ordered funnel step.
+
+    Each step is the set of users who performed its event *and* every prior
+    step's event (progressive ``INTERSECT``), so the counts are monotonically
+    non-increasing — a true funnel rather than independent per-event tallies.
+    Returns a single row with one column per step, in order.
+    """
+    ctes = [
+        f"step_0 AS (SELECT DISTINCT {user_col} AS user_id "
+        f"FROM {events_table} WHERE {event_col} = '{step_events[0]}')"
+    ]
+    for i, ev in enumerate(step_events[1:], start=1):
         ctes.append(
-            f"step_{i} AS (SELECT DISTINCT {user_col} FROM {events_table} "
+            f"step_{i} AS (SELECT user_id FROM step_{i - 1} "
+            f"INTERSECT SELECT DISTINCT {user_col} FROM {events_table} "
             f"WHERE {event_col} = '{ev}')"
         )
     selects = ", ".join(
-        f"(SELECT COUNT(*) FROM step_{i}) AS \"{ev}\""
+        f'(SELECT COUNT(*) FROM step_{i}) AS "{ev}"'
         for i, ev in enumerate(step_events)
     )
     return "WITH " + ",\n".join(ctes) + f"\nSELECT {selects};"

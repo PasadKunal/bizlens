@@ -45,3 +45,35 @@ def ping(engine: Engine | None = None) -> bool:
         return True
     except Exception:
         return False
+
+
+def sandboxed_query(
+    sql: str,
+    role: str | None = None,
+    timeout_seconds: int | None = None,
+    row_cap: int | None = None,
+) -> pd.DataFrame:
+    """Run a read-only SELECT under the analyst role with hard safety limits.
+
+    * ``statement_timeout`` aborts runaway queries server-side.
+    * the query is wrapped in ``SELECT * FROM (...) LIMIT cap`` so an enormous
+      result set can never be materialised, even if the caller omits a LIMIT.
+    * an optional ``SET ROLE`` supports per-user row-level security.
+
+    Only ``SELECT`` statements are accepted; anything else raises ``ValueError``.
+    """
+    settings = get_settings()
+    timeout_seconds = timeout_seconds or settings.adhoc_query_timeout_seconds
+    row_cap = row_cap or settings.adhoc_query_row_cap
+
+    cleaned = sql.strip().rstrip(";")
+    if not cleaned.lower().startswith("select"):
+        raise ValueError("only SELECT statements are permitted")
+
+    wrapped = f"SELECT * FROM (\n{cleaned}\n) AS _bizlens_sandbox LIMIT {row_cap}"
+    engine = get_analyst_engine()
+    with engine.connect() as conn:
+        conn.execute(text(f"SET statement_timeout = {timeout_seconds * 1000}"))
+        if role:
+            conn.execute(text(f"SET ROLE {role}"))
+        return pd.read_sql(text(wrapped), conn)

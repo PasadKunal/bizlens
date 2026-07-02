@@ -40,6 +40,27 @@ class SchemaReport:
     type_mismatches: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
+def _dtype_category(dtype: str) -> str:
+    """Bucket a dtype string into a coarse category.
+
+    We validate the *kind* of a column (text / datetime / float / int / bool),
+    not the exact backing dtype, so equivalent representations (``object`` vs
+    ``str``, ``datetime64[ns]`` vs ``datetime64[us]``) don't trip the check.
+    """
+    d = dtype.lower()
+    if d.startswith("datetime"):
+        return "datetime"
+    if d.startswith("float"):
+        return "float"
+    if d.startswith(("int", "uint")):
+        return "int"
+    if d.startswith("bool"):
+        return "bool"
+    if d.startswith(("object", "str", "string")):
+        return "text"
+    return d
+
+
 def validate_schema(table: str, df: pd.DataFrame) -> SchemaReport:
     """Validate ``df`` against the expected schema for ``table``."""
     expected = EXPECTED_SCHEMAS.get(table)
@@ -51,8 +72,7 @@ def validate_schema(table: str, df: pd.DataFrame) -> SchemaReport:
     for col, exp_type in expected.items():
         if col in df.columns:
             actual = str(df[col].dtype)
-            # Allow object/string interchange; be strict on numeric vs datetime.
-            if exp_type != actual and not (exp_type == "object" and actual.startswith("string")):
+            if _dtype_category(exp_type) != _dtype_category(actual):
                 mismatches[col] = (exp_type, actual)
 
     return SchemaReport(

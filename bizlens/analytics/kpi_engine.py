@@ -21,43 +21,70 @@ class KPICard:
     is_anomaly: bool = False
 
 
+# ``as_of`` is the reference "now" for trailing windows. It defaults to the
+# database's CURRENT_DATE for live use; when running against a seeded dataset the
+# warehouse layer passes the latest data date so windows still return rows.
+
+
 def active_users_sql(
     events_table: str = "events", user_col: str = "user_id",
-    date_col: str = "event_date", window_days: int = 1,
+    date_col: str = "event_date", window_days: int = 1, as_of: str = "CURRENT_DATE",
 ) -> str:
     """Distinct active users over the trailing ``window_days`` (DAU/WAU/MAU)."""
     return f"""
     SELECT COUNT(DISTINCT {user_col}) AS active_users
     FROM {events_table}
-    WHERE {date_col} >= CURRENT_DATE - INTERVAL '{window_days} days';
+    WHERE {date_col} > ({as_of})::date - INTERVAL '{window_days} days';
     """
 
 
 def revenue_trend_sql(
     orders_table: str = "orders", date_col: str = "order_date",
-    amount_col: str = "amount", days: int = 90,
+    amount_col: str = "amount", days: int = 90, as_of: str = "CURRENT_DATE",
 ) -> str:
     """Daily revenue for the trailing ``days`` — feeds the trend chart."""
     return f"""
-    SELECT date_trunc('day', {date_col}) AS day,
+    SELECT date_trunc('day', {date_col})::date AS day,
            SUM({amount_col}) AS revenue
     FROM {orders_table}
-    WHERE {date_col} >= CURRENT_DATE - INTERVAL '{days} days'
+    WHERE {date_col} > ({as_of})::date - INTERVAL '{days} days'
     GROUP BY 1 ORDER BY 1;
     """
 
 
-def churn_rate_sql(
-    users_table: str = "users", last_seen_col: str = "last_active_date",
-    churn_window_days: int = 30,
+def revenue_total_sql(
+    orders_table: str = "orders", date_col: str = "order_date",
+    amount_col: str = "amount", days: int = 30, as_of: str = "CURRENT_DATE",
 ) -> str:
-    """Share of users with no activity in the last ``churn_window_days``."""
+    """Total revenue over the trailing ``days`` — feeds a KPI card."""
     return f"""
+    SELECT COALESCE(SUM({amount_col}), 0) AS revenue
+    FROM {orders_table}
+    WHERE {date_col} > ({as_of})::date - INTERVAL '{days} days';
+    """
+
+
+def churn_rate_sql(
+    events_table: str = "events", user_col: str = "user_id",
+    date_col: str = "event_date", churn_window_days: int = 30,
+    as_of: str = "CURRENT_DATE",
+) -> str:
+    """Share of users whose most recent activity is older than the churn window.
+
+    Last-activity is derived from the events table (no dependency on a
+    denormalised ``last_active_date`` column).
+    """
+    return f"""
+    WITH last_seen AS (
+        SELECT {user_col} AS user_id, MAX({date_col}) AS last_active
+        FROM {events_table}
+        GROUP BY {user_col}
+    )
     SELECT
         COUNT(*) FILTER (
-            WHERE {last_seen_col} < CURRENT_DATE - INTERVAL '{churn_window_days} days'
+            WHERE last_active < ({as_of})::date - INTERVAL '{churn_window_days} days'
         )::float / NULLIF(COUNT(*), 0) AS churn_rate
-    FROM {users_table};
+    FROM last_seen;
     """
 
 

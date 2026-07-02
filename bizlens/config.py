@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     jwt_expiry_minutes: int = Field(default=60, alias="JWT_EXPIRY_MINUTES")
 
+    # A single built-in analyst account for local/dev use. In production this is
+    # replaced by a real user store; the account maps to the read-only PG role.
+    dev_username: str = Field(default="analyst", alias="DEV_USERNAME")
+    dev_password: str = Field(default="analyst", alias="DEV_PASSWORD")
+    analyst_role: str = Field(default="bizlens_readonly", alias="ANALYST_ROLE")
+
     # --- OpenAI -------------------------------------------------------------
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o", alias="OPENAI_MODEL")

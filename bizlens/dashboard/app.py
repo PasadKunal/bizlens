@@ -4,16 +4,19 @@ Run locally with::
 
     python -m bizlens.dashboard.app
 
-By default the dashboard renders from the live warehouse. If the database is
-unreachable it falls back to bundled demo data so the UI is always explorable.
+The dashboard renders from the live warehouse when it is reachable, and falls
+back to bundled demo data otherwise so the UI is always explorable.
 """
 from __future__ import annotations
+
+import logging
 
 import numpy as np
 import pandas as pd
 from dash import Dash, Input, Output, dcc, html
 
-from bizlens.analytics.funnel_analysis import compute_funnel
+from bizlens import warehouse
+from bizlens.analytics.funnel_analysis import FunnelStep, compute_funnel
 from bizlens.analytics.kpi_engine import KPICard
 from bizlens.dashboard.funnel_chart import funnel_chart
 from bizlens.dashboard.kpi_cards import kpi_row
@@ -21,7 +24,12 @@ from bizlens.dashboard.nl_to_sql import match_query
 from bizlens.dashboard.retention_heatmap import retention_heatmap
 from bizlens.dashboard.trend_chart import trend_chart
 
+logger = logging.getLogger(__name__)
 
+
+# --------------------------------------------------------------------------- #
+# Demo fallbacks (used only when the warehouse is unreachable)
+# --------------------------------------------------------------------------- #
 def _demo_retention() -> pd.DataFrame:
     rng = np.random.default_rng(42)
     weeks = range(12)
@@ -49,13 +57,59 @@ def _demo_cards() -> list[KPICard]:
     ]
 
 
-def build_app() -> Dash:
-    app = Dash(__name__, title="BizLens")
-
-    demo_steps = compute_funnel(
+def _demo_funnel() -> list[FunnelStep]:
+    return compute_funnel(
         [("Visit", 10000), ("Product view", 6200), ("Add to cart", 2800),
          ("Checkout", 1500), ("Purchase", 980)]
     )
+
+
+# --------------------------------------------------------------------------- #
+# Live loaders with fallback
+# --------------------------------------------------------------------------- #
+def load_cards() -> tuple[list[KPICard], bool]:
+    try:
+        return warehouse.kpi_cards(), True
+    except Exception as exc:  # noqa: BLE001 - any failure -> demo mode
+        logger.warning("KPI cards unavailable, using demo data: %s", exc)
+        return _demo_cards(), False
+
+
+def load_trend() -> pd.Series:
+    try:
+        df = warehouse.revenue_trend()
+        if not df.empty:
+            return pd.Series(df["revenue"].astype(float).values, index=pd.to_datetime(df["day"]))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("revenue trend unavailable, using demo data: %s", exc)
+    return _demo_trend()
+
+
+def load_retention() -> pd.DataFrame:
+    try:
+        m = warehouse.retention_matrix()
+        if not m.empty:
+            return m
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("retention matrix unavailable, using demo data: %s", exc)
+    return _demo_retention()
+
+
+def load_funnel() -> list[FunnelStep]:
+    try:
+        steps = warehouse.funnel()
+        if steps and steps[0].users > 0:
+            return steps
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("funnel unavailable, using demo data: %s", exc)
+    return _demo_funnel()
+
+
+def build_app() -> Dash:
+    app = Dash(__name__, title="BizLens")
+
+    cards, live = load_cards()
+    source = "live warehouse" if live else "demo data (warehouse unreachable)"
 
     app.layout = html.Div(
         style={"maxWidth": "1100px", "margin": "0 auto", "padding": "24px",
@@ -64,14 +118,16 @@ def build_app() -> Dash:
             html.H1("BizLens", style={"marginBottom": "4px"}),
             html.P("Self-hosted business intelligence — cohorts, funnels, KPIs.",
                    style={"color": "#64748B", "marginTop": 0}),
+            html.Div(f"Data source: {source}",
+                     style={"fontSize": "12px", "color": "#94A3B8", "marginBottom": "12px"}),
             html.H3("Key metrics"),
-            kpi_row(_demo_cards()),
+            kpi_row(cards),
             html.H3("Revenue trend", style={"marginTop": "28px"}),
-            dcc.Graph(figure=trend_chart(_demo_trend(), title="Daily Revenue (90d)")),
+            dcc.Graph(figure=trend_chart(load_trend(), title="Daily Revenue (90d)")),
             html.H3("Cohort retention"),
-            dcc.Graph(figure=retention_heatmap(_demo_retention())),
+            dcc.Graph(figure=retention_heatmap(load_retention())),
             html.H3("Conversion funnel"),
-            dcc.Graph(figure=funnel_chart(demo_steps)),
+            dcc.Graph(figure=funnel_chart(load_funnel())),
             html.H3("Ask a question (NL → SQL)"),
             dcc.Input(id="nl-input", type="text", placeholder="e.g. weekly active users by country",
                       style={"width": "100%", "padding": "10px"}),

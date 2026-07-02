@@ -128,12 +128,15 @@ def build_app() -> Dash:
             dcc.Graph(figure=retention_heatmap(load_retention())),
             html.H3("Conversion funnel"),
             dcc.Graph(figure=funnel_chart(load_funnel())),
-            html.H3("Ask a question (NL → SQL)"),
-            dcc.Input(id="nl-input", type="text", placeholder="e.g. weekly active users by country",
-                      style={"width": "100%", "padding": "10px"}),
-            html.Pre(id="nl-output", style={"background": "#0F172A", "color": "#E2E8F0",
-                                            "padding": "16px", "borderRadius": "8px",
-                                            "whiteSpace": "pre-wrap"}),
+            html.Div(id="nl-section", children=[
+                html.H3("Ask a question (NL → SQL)"),
+                dcc.Input(id="nl-input", type="text",
+                          placeholder="e.g. weekly active users by country",
+                          style={"width": "100%", "padding": "10px"}),
+                html.Pre(id="nl-output", style={"background": "#0F172A", "color": "#E2E8F0",
+                                                "padding": "16px", "borderRadius": "8px",
+                                                "whiteSpace": "pre-wrap"}),
+            ]),
         ],
     )
 
@@ -153,4 +156,4 @@ def build_app() -> Dash:
 app = build_app()
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    app.run(host="0.0.0.0", port=8050)

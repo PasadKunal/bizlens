@@ -9,6 +9,10 @@ AI-generated reporting. Think a lightweight, self-hostable Metabase where
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+![BizLens dashboard](docs/screenshots/dashboard.png)
+
+<sub>Live dashboard: KPI cards, revenue trend with anomaly detection, a 12-week cohort-retention heatmap, and the conversion funnel — all served from Postgres via Redis-cached queries.</sub>
+
 ---
 
 ## Why BizLens
@@ -52,6 +56,8 @@ projects skip.
 - **Significance testing between cohorts** — chi-squared with **Bonferroni** correction for multiple cohort comparisons.
 - **Churn-signal detection** — flags cohorts whose week-4 retention falls >2σ below baseline.
 
+![Cohort retention heatmap](docs/screenshots/retention.png)
+
 ### Funnel Analysis
 - Multi-step drop-off, **A/B funnel comparison** with significance testing, and time-to-convert distributions ([`funnel_analysis.py`](bizlens/analytics/funnel_analysis.py)).
 
@@ -66,6 +72,8 @@ projects skip.
 
 ### NL → SQL (RAG)
 - Ask *"how much money came from different sources"* and get a **validated** pre-built query back. The query library is embedded into a **pgvector** table and matched by cosine distance (`<=>`, HNSW index); a local hashing embedder keeps it working offline/in CI, with an OpenAI backend for true semantics ([`vector_store.py`](bizlens/sql/vector_store.py), [`embeddings.py`](bizlens/nlp/embeddings.py)).
+
+![Natural language to SQL](docs/screenshots/nl_to_sql.png)
 
 ### Multi-user data scoping (row-level security)
 - Each user's JWT carries a **scope**; the ad-hoc sandbox sets a Postgres session variable that RLS policies filter on. A `BR`-scoped user cannot read another region's rows **even with a hand-crafted `WHERE` clause** — the filter is enforced by Postgres, not the app ([`rls.py`](bizlens/sql/rls.py)). Try it: log in as `analyst` (all regions) vs `analyst_br` (Brazil only).

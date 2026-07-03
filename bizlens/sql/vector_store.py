@@ -54,7 +54,7 @@ def build(engine: Engine | None = None) -> int:
                 {"n": name, "d": meta["description"], "s": meta["sql"].strip()},
             )
         # HNSW index for cosine distance (overkill at this corpus size, but this
-        # is how it scales — and it exercises the real pgvector index path).
+        # is how it scales - and it exercises the real pgvector index path).
         conn.execute(
             text(
                 f"CREATE INDEX ON {TABLE} USING hnsw (embedding vector_cosine_ops)"

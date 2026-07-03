@@ -52,7 +52,7 @@ def test_sandbox_row_cap():
 
 def test_rls_scope_isolation():
     # A scoped user sees only their scope's rows, and cannot escape it even by
-    # naming another scope in the WHERE clause — enforced by Postgres. Written
+    # naming another scope in the WHERE clause - enforced by Postgres. Written
     # to be dataset-agnostic (synthetic country codes or Olist state codes).
     ranked = sandboxed_query(
         "SELECT country, COUNT(*) n FROM users GROUP BY country ORDER BY n DESC", scope="ALL"
@@ -62,7 +62,7 @@ def test_rls_scope_isolation():
 
     scoped = set(sandboxed_query("SELECT DISTINCT country FROM users", scope=mine)["country"])
     assert scoped == {mine}
-    # Even naming another scope explicitly returns nothing — RLS filters it out.
+    # Even naming another scope explicitly returns nothing - RLS filters it out.
     escaped = sandboxed_query(f"SELECT * FROM users WHERE country = '{other}'", scope=mine)
     assert len(escaped) == 0
 

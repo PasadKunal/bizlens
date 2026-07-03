@@ -62,7 +62,7 @@ def bonferroni_correction(
     """Apply Bonferroni correction to a family of p-values.
 
     Returns a list of reject/accept decisions and the corrected threshold.
-    Conservative — guarantees family-wise error-rate control, which is the
+    Conservative - guarantees family-wise error-rate control, which is the
     right default when comparing many cohorts against a baseline.
     """
     if not p_values:
@@ -74,7 +74,7 @@ def bonferroni_correction(
 def benjamini_hochberg(
     p_values: list[float], alpha: float = 0.05
 ) -> list[bool]:
-    """Benjamini-Hochberg FDR correction — more power than Bonferroni when
+    """Benjamini-Hochberg FDR correction - more power than Bonferroni when
     testing many metrics. Returns reject/accept per hypothesis in input order.
     """
     n = len(p_values)

@@ -8,7 +8,7 @@ A policy scopes visible rows to a session variable, ``bizlens.scope``:
 * a country code    -> see only that country's rows
 
 The API sets ``bizlens.scope`` from the caller's JWT, so a scoped user cannot
-read another scope's rows even with a hand-crafted ``WHERE`` clause — the filter
+read another scope's rows even with a hand-crafted ``WHERE`` clause - the filter
 is enforced by Postgres, not the application. Policies apply to the non-owner
 read-only role; the ``bizlens`` owner (used by the ETL) bypasses them.
 """
@@ -29,7 +29,7 @@ POLICY = "scope_isolation"
 def apply_rls(engine: Engine | None = None, tables: tuple[str, ...] = RLS_TABLES) -> None:
     """Enable RLS and (re)create the scope policy on each table.
 
-    Idempotent — safe to run after every ETL (which drops/recreates tables and
+    Idempotent - safe to run after every ETL (which drops/recreates tables and
     therefore their policies).
     """
     engine = engine or get_engine()

@@ -116,7 +116,7 @@ def build_app() -> Dash:
                "fontFamily": "Inter, system-ui, sans-serif"},
         children=[
             html.H1("BizLens", style={"marginBottom": "4px"}),
-            html.P("Self-hosted business intelligence — cohorts, funnels, KPIs.",
+            html.P("Self-hosted business intelligence - cohorts, funnels, KPIs.",
                    style={"color": "#64748B", "marginTop": 0}),
             html.Div(f"Data source: {source}",
                      style={"fontSize": "12px", "color": "#94A3B8", "marginBottom": "12px"}),
@@ -129,7 +129,7 @@ def build_app() -> Dash:
             html.H3("Conversion funnel"),
             dcc.Graph(figure=funnel_chart(load_funnel())),
             html.Div(id="nl-section", children=[
-                html.H3("Ask a question (NL → SQL)"),
+                html.H3("Ask a question (NL -> SQL)"),
                 dcc.Input(id="nl-input", type="text",
                           placeholder="e.g. weekly active users by country",
                           style={"width": "100%", "padding": "10px"}),

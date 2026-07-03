@@ -42,7 +42,7 @@ def revenue_trend_sql(
     orders_table: str = "orders", date_col: str = "order_date",
     amount_col: str = "amount", days: int = 90, as_of: str = "CURRENT_DATE",
 ) -> str:
-    """Daily revenue for the trailing ``days`` — feeds the trend chart."""
+    """Daily revenue for the trailing ``days`` - feeds the trend chart."""
     return f"""
     SELECT date_trunc('day', {date_col})::date AS day,
            SUM({amount_col}) AS revenue
@@ -56,7 +56,7 @@ def revenue_total_sql(
     orders_table: str = "orders", date_col: str = "order_date",
     amount_col: str = "amount", days: int = 30, as_of: str = "CURRENT_DATE",
 ) -> str:
-    """Total revenue over the trailing ``days`` — feeds a KPI card."""
+    """Total revenue over the trailing ``days`` - feeds a KPI card."""
     return f"""
     SELECT COALESCE(SUM({amount_col}), 0) AS revenue
     FROM {orders_table}

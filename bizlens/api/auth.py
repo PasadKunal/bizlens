@@ -2,7 +2,7 @@
 
 Each user is associated with a Postgres role that has SELECT grants only on the
 tables they may see. The API authenticates the JWT, resolves the role, and (in
-the DB layer) issues ``SET ROLE`` so row-level security policies apply — no
+the DB layer) issues ``SET ROLE`` so row-level security policies apply - no
 shared admin connection, no data leakage between tenants.
 """
 from __future__ import annotations

@@ -2,9 +2,9 @@
 
 Two paths are provided:
 
-* :func:`retention_matrix_sql` — a single window-function query that computes
+* :func:`retention_matrix_sql` - a single window-function query that computes
   the full N-cohort x M-week retention grid in one round-trip to Postgres.
-* :func:`retention_matrix_from_events` — an equivalent pandas implementation
+* :func:`retention_matrix_from_events` - an equivalent pandas implementation
   used for unit tests and small in-memory datasets.
 
 Both return the retention grid as *fractions* (0..1) indexed by cohort period.
@@ -32,7 +32,7 @@ def retention_matrix_sql(
 
     Uses ``date_trunc`` to bucket users into signup-week cohorts and
     conditional aggregation (``COUNT(DISTINCT ...) FILTER``) to count returning
-    users per week offset — the whole grid in one query. A composite index on
+    users per week offset - the whole grid in one query. A composite index on
     ``(user_id, event_date)`` keeps this under a few seconds at scale.
     """
     return f"""
@@ -84,7 +84,7 @@ def retention_matrix_from_events(
         ev.groupby(["cohort_week", "week_offset"])[user_col].nunique().reset_index(name="active")
     )
     # Denominator is the full cohort size (all signups that week), not week-0
-    # actives — otherwise a user active in week N but not week 0 pushes a cell
+    # actives - otherwise a user active in week N but not week 0 pushes a cell
     # above 100%.
     cohort_size = signups.groupby("cohort_week")[user_col].nunique()
 
@@ -107,7 +107,7 @@ def compare_cohorts(
 
 def churn_signal_cohorts(matrix: pd.DataFrame, week: int = 4, sigma: float = 2.0) -> list:
     """Flag cohorts whose week-``week`` retention is >``sigma`` std below the
-    baseline across all cohorts — an early churn warning."""
+    baseline across all cohorts - an early churn warning."""
     if week not in matrix.columns:
         return []
     col = matrix[week].dropna()

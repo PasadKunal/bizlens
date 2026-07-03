@@ -2,7 +2,7 @@
 
 The `Olist e-commerce dataset <https://www.kaggle.com/olistbr/brazilian-ecommerce>`_
 is a set of normalised transactional CSVs. This loader maps them onto the three
-tables BizLens analyses — ``users``, ``events``, ``orders`` — so the real data
+tables BizLens analyses - ``users``, ``events``, ``orders`` - so the real data
 flows through the exact same ETL, analytics, and RLS paths as the synthetic set.
 
 Mapping

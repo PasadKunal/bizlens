@@ -1,6 +1,6 @@
 """APScheduler jobs: KPI pre-aggregation and the weekly digest.
 
-Lightweight in-process scheduling — no Celery/broker needed at this scale. Two
+Lightweight in-process scheduling - no Celery/broker needed at this scale. Two
 jobs are registered:
 
 * ``refresh_kpi_cache`` every 5 minutes  -> keeps the dashboard sub-2s.
@@ -30,7 +30,7 @@ def refresh_kpi_cache() -> None:
 def weekly_digest() -> None:
     """Run the data-quality gate, build the weekly report, and export it.
 
-    The report is blocked if any source table fails its quality checks — no
+    The report is blocked if any source table fails its quality checks - no
     digest ships on bad data.
     """
     from bizlens import warehouse

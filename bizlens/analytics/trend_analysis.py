@@ -18,7 +18,7 @@ def period_over_period(series: pd.Series, periods: int = 7) -> pd.Series:
 
 
 def rolling_zscore(series: pd.Series, window: int = 30) -> pd.Series:
-    """Rolling z-score — a lightweight complement to the Welford detector for
+    """Rolling z-score - a lightweight complement to the Welford detector for
     charting deviation bands on a dashboard."""
     mean = series.rolling(window=window, min_periods=2).mean()
     std = series.rolling(window=window, min_periods=2).std()

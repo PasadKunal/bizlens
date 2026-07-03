@@ -3,7 +3,7 @@
 The pre-built queries in :mod:`bizlens.sql.query_library` are embedded (pgvector
 in production). A user's natural-language question is embedded and matched to
 the closest template by cosine similarity, returning *validated* SQL rather than
-free-form generated SQL — safe for a read-only, non-technical self-serve flow.
+free-form generated SQL - safe for a read-only, non-technical self-serve flow.
 
 When pgvector/embeddings are unavailable, a deterministic token-overlap matcher
 provides an equivalent (lower-fidelity) fallback so the feature works offline.

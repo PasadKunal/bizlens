@@ -1,6 +1,6 @@
 """Streaming anomaly detection using Welford's online algorithm.
 
-Welford maintains a running mean and variance in O(1) memory per metric — no
+Welford maintains a running mean and variance in O(1) memory per metric - no
 need to store the full time series. A new observation is flagged when it lands
 more than ``sigma`` standard deviations from the running mean.
 """
@@ -28,7 +28,7 @@ class WelfordDetector:
 
     @property
     def variance(self) -> float:
-        # Sample variance (ddof=1) — the unbiased estimator used for z-scores.
+        # Sample variance (ddof=1) - the unbiased estimator used for z-scores.
         return self._m2 / (self.count - 1) if self.count > 1 else 0.0
 
     @property
@@ -51,7 +51,7 @@ class WelfordDetector:
     def is_anomaly(self, value: float) -> bool:
         """Return True if ``value`` is anomalous vs. current statistics.
 
-        Does not update state — call :meth:`update` separately once the point
+        Does not update state - call :meth:`update` separately once the point
         is accepted into the baseline.
         """
         if self.count < self.warmup or self.std == 0:
@@ -63,7 +63,7 @@ def scan_series(values: list[float], sigma: float = 2.5, warmup: int = 5) -> lis
     """Return the indices of anomalous points in ``values``.
 
     Each point is tested against the baseline built from all *prior* points,
-    then folded into the baseline — mirroring how a live metric stream behaves.
+    then folded into the baseline - mirroring how a live metric stream behaves.
     """
     detector = WelfordDetector(sigma=sigma, warmup=warmup)
     anomalies: list[int] = []

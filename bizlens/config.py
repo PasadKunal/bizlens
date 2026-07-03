@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # --- Postgres -----------------------------------------------------------
     # The application role. Analytics queries should use ANALYST_DATABASE_URL
-    # (a SELECT-only role) — never the admin role.
+    # (a SELECT-only role) - never the admin role.
     database_url: str = Field(
         default="postgresql+psycopg://bizlens:bizlens@localhost:5432/bizlens",
         alias="DATABASE_URL",

@@ -42,7 +42,7 @@ def generate(n_users: int = 5000, seed: int = 42, out_dir: str | Path = "data/pr
     )
 
     # --- events (retention) -------------------------------------------------
-    # Paid users retain worse than organic — a real, testable pattern.
+    # Paid users retain worse than organic - a real, testable pattern.
     base_retention = {"organic": 0.80, "paid": 0.60, "referral": 0.75, "email": 0.70}
     event_rows = []
     for _, u in users.iterrows():

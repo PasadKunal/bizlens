@@ -1,4 +1,4 @@
-"""BizLens — Self-hosted Business Intelligence & Analytics platform.
+"""BizLens - Self-hosted Business Intelligence & Analytics platform.
 
 Modules
 -------

@@ -8,7 +8,7 @@ def test_selects_clickstream_for_synthetic_events():
 
 
 def test_selects_fulfillment_for_olist_events():
-    # Olist emits purchase/checkout/delivered — only two overlap the clickstream
+    # Olist emits purchase/checkout/delivered - only two overlap the clickstream
     # funnel, so the fulfillment funnel must win.
     present = {"purchase", "checkout", "delivered"}
     assert select_funnel(present) == FULFILLMENT_FUNNEL

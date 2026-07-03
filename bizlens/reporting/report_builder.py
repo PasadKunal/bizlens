@@ -62,7 +62,7 @@ def export_pdf(report: WeeklyReport, out_dir: str | Path = "data/reports") -> Pa
     _, height = letter
     y = height - inch
     c.setFont("Helvetica-Bold", 18)
-    c.drawString(inch, y, f"BizLens Weekly Digest — {report.period_end.isoformat()}")
+    c.drawString(inch, y, f"BizLens Weekly Digest - {report.period_end.isoformat()}")
     y -= 0.5 * inch
     c.setFont("Helvetica", 11)
     for line in _wrap(report.narrative, 90):

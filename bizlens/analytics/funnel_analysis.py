@@ -88,7 +88,7 @@ def funnel_sql(
 
     Each step is the set of users who performed its event *and* every prior
     step's event (progressive ``INTERSECT``), so the counts are monotonically
-    non-increasing — a true funnel rather than independent per-event tallies.
+    non-increasing - a true funnel rather than independent per-event tallies.
     Returns a single row with one column per step, in order.
     """
     ctes = [

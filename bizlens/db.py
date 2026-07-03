@@ -2,8 +2,8 @@
 
 Two engines are exposed:
 
-* :func:`get_engine`          — the application role (read/write, used by ETL).
-* :func:`get_analyst_engine`  — the SELECT-only analyst role used by every
+* :func:`get_engine`          - the application role (read/write, used by ETL).
+* :func:`get_analyst_engine`  - the SELECT-only analyst role used by every
   analytics query. Running analytics through the read-only role is the core
   safety guarantee of the platform: no analytical query can mutate data.
 """

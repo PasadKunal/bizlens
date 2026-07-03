@@ -46,7 +46,7 @@ def health() -> dict:
 def login(form: OAuth2PasswordRequestForm = Depends()) -> dict:
     """Issue a JWT for a built-in analyst account (dev user store).
 
-    ``analyst`` carries RLS scope ALL; ``analyst_br`` carries scope BR — both
+    ``analyst`` carries RLS scope ALL; ``analyst_br`` carries scope BR - both
     share the dev password, to demo per-user data scoping.
     """
     settings = get_settings()

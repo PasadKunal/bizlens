@@ -2,11 +2,11 @@
 
 Two backends, one interface:
 
-* **local** (default) — a deterministic hashing embedder over normalised word
+* **local** (default) - a deterministic hashing embedder over normalised word
   tokens. No external calls, no model download, so it runs in CI and offline.
   Synonym normalisation ("people"->"users", "signup"->"register", ...) lets it
   bridge phrasing differences beyond raw token overlap.
-* **openai** — ``text-embedding-3-small`` when ``EMBED_BACKEND=openai`` and a
+* **openai** - ``text-embedding-3-small`` when ``EMBED_BACKEND=openai`` and a
   key is set, for true semantic matching.
 
 The embedding dimension is fixed per backend so the pgvector column type stays

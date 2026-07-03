@@ -25,8 +25,11 @@ logger = logging.getLogger(__name__)
 KPI_CACHE_KEY = "kpi:cards"
 REVENUE_CACHE_KEY = "kpi:revenue_trend"
 
-# Default funnel for the seeded e-commerce dataset.
-DEFAULT_FUNNEL = ["visit", "product_view", "add_to_cart", "checkout", "purchase"]
+# Canonical funnels for the datasets BizLens ships with. The synthetic generator
+# emits a clickstream; the real Olist data is transactional (order lifecycle).
+CLICKSTREAM_FUNNEL = ["visit", "product_view", "add_to_cart", "checkout", "purchase"]
+FULFILLMENT_FUNNEL = ["purchase", "checkout", "delivered"]
+DEFAULT_FUNNEL = CLICKSTREAM_FUNNEL
 
 
 def data_now() -> str:
@@ -118,9 +121,29 @@ def retention_matrix(max_weeks: int = 12) -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 # Funnel
 # --------------------------------------------------------------------------- #
+def select_funnel(present: set[str]) -> list[str]:
+    """Choose a funnel matching the event vocabulary present in the data.
+
+    Prefers the clickstream funnel (synthetic data); falls back to the Olist
+    fulfillment funnel; otherwise uses whatever event names exist. Pure function
+    (no I/O) so the selection logic is unit-testable.
+    """
+    for candidate in (CLICKSTREAM_FUNNEL, FULFILLMENT_FUNNEL):
+        steps = [s for s in candidate if s in present]
+        if len(steps) >= 3:
+            return steps
+    return sorted(present)[:5]
+
+
+def default_funnel_steps() -> list[str]:
+    """Auto-detect the funnel steps from the distinct event names in the data."""
+    present = set(read_sql("SELECT DISTINCT event_name FROM events")["event_name"])
+    return select_funnel(present)
+
+
 def funnel(step_events: list[str] | None = None) -> list[FunnelStep]:
-    """Compute the conversion funnel over the given ordered events."""
-    step_events = step_events or DEFAULT_FUNNEL
+    """Compute the conversion funnel over the given (or auto-detected) events."""
+    step_events = step_events or default_funnel_steps()
     row = read_sql(funnel_sql("events", step_events))
     counts = [(ev, int(row.iloc[0][ev])) for ev in step_events]
     return compute_funnel(counts)

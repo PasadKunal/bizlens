@@ -176,6 +176,12 @@ curl -s -X POST localhost:8000/query/adhoc -H "Authorization: Bearer $TOKEN" \
      -d '{"sql":"SELECT segment, COUNT(*) FROM users GROUP BY segment"}' | jq
 ```
 
+### Running on real data
+
+The same platform on the real **Brazilian Olist** e-commerce dataset (~96k customers, 99k orders). Retention across 99 weekly cohorts (Jan 2017–Jul 2018) shows the tell-tale shape of a transactional marketplace — a strong signup week, then a steep drop as most customers are one-time buyers. RLS scopes each user to a Brazilian state (`SP` alone has 40k customers), and the funnel adapts to Olist's order lifecycle (`purchase → checkout → delivered`).
+
+![Cohort retention on real Olist data](docs/screenshots/olist_retention.png)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

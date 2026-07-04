@@ -5,9 +5,12 @@ analysis, funnel analysis, and KPI dashboards with statistical rigour and
 AI-generated reporting. Think a lightweight, self-hostable Metabase where
 *differences between cohorts are tested, not just displayed.*
 
+[![Live demo](https://img.shields.io/badge/live%20demo-online-brightgreen)](https://bizlens-b33l.onrender.com)
 [![CI](https://github.com/PasadKunal/bizlens/actions/workflows/ci.yml/badge.svg)](https://github.com/PasadKunal/bizlens/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+**Live demo:** https://bizlens-b33l.onrender.com (hosted free on Render + Neon; the first load can take ~50s while the instance wakes)
 
 ![BizLens dashboard](docs/screenshots/dashboard.png)
 

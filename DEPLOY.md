@@ -25,6 +25,17 @@ visit after a nap takes ~50s to wake. Fine for a portfolio demo.
    ```
    postgresql+psycopg://myuser:mypass@ep-xxx-123.us-east-2.aws.neon.tech/neondb?sslmode=require
    ```
+   Use Neon's **direct** endpoint (the host without `-pooler`) for correct
+   session-level behaviour (the read-only role and RLS scope).
+
+Also pick a **strong** password for the read-only role (managed hosts like Neon
+reject weak ones). Call it `RO_PASSWORD`, e.g. `Bz7xQr2Lp9Km-2026`. Your
+**ANALYST_DATABASE_URL** is the same host and db with the read-only user and that
+password:
+```
+postgresql+psycopg://bizlens_readonly:RO_PASSWORD@ep-xxx-123.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+(The seed in Step 2 creates that `bizlens_readonly` role with that password.)
 
 ## 2. Seed the database once (from your machine)
 
@@ -34,8 +45,10 @@ at Neon (with `blvenv` active):
 
 ```bash
 export DATABASE_URL="postgresql+psycopg://myuser:mypass@ep-xxx-123.us-east-2.aws.neon.tech/neondb?sslmode=require"
-# same host + db, but the read-only role that the seed creates:
-export ANALYST_DATABASE_URL="postgresql+psycopg://bizlens_readonly:readonly@ep-xxx-123.us-east-2.aws.neon.tech/neondb?sslmode=require"
+# strong password for the read-only role the seed creates (managed hosts
+# reject weak ones); this must match ANALYST_DATABASE_URL below:
+export ANALYST_DB_PASSWORD="Bz7xQr2Lp9Km-2026"
+export ANALYST_DATABASE_URL="postgresql+psycopg://bizlens_readonly:Bz7xQr2Lp9Km-2026@ep-xxx-123.us-east-2.aws.neon.tech/neondb?sslmode=require"
 export REDIS_URL=""
 
 python -m scripts.deploy_seed
@@ -44,8 +57,9 @@ python -m scripts.deploy_seed
 You should see it initialise the DB, load ~5k users / 49k events, apply RLS, and
 index the query templates. Re-run this any time to reset the demo data.
 
-> If Neon rejects `CREATE ROLE`, create the role once in the Neon SQL editor:
-> `CREATE ROLE bizlens_readonly LOGIN PASSWORD 'readonly';` then re-run the seed.
+> If Neon rejects `CREATE ROLE`, create the role once in the Neon SQL editor
+> (use the same strong password), then re-run the seed:
+> `CREATE ROLE bizlens_readonly LOGIN PASSWORD 'Bz7xQr2Lp9Km-2026';`
 
 ## 3. Deploy the web services (Render)
 

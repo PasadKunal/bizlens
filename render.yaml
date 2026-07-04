@@ -14,7 +14,7 @@ services:
     plan: free
     dockerfilePath: ./bizlens/infra/Dockerfile
     dockerContext: .
-    dockerCommand: gunicorn bizlens.dashboard.app:server --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    dockerCommand: gunicorn bizlens.dashboard.app:server --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: DATABASE_URL
         sync: false

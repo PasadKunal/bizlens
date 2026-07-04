@@ -1,0 +1,24 @@
+# Keep the build context small and never bake local state/secrets into the image.
+.git/
+blvenv/
+.venv/
+venv/
+env/
+
+.env
+*.local
+
+data/raw/*
+data/processed/*
+data/reports/*
+
+docs/screenshots/
+*.docx
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/

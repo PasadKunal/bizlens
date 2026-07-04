@@ -132,10 +132,16 @@ bizlens/
 ├── reporting/   data_quality_checker · insight_generator · report_builder · scheduler
 ├── dashboard/   app · kpi_cards · retention_heatmap · funnel_chart · trend_chart · nl_to_sql
 ├── api/         main (FastAPI routes) · auth (JWT + Postgres role)
-└── infra/       docker-compose · Dockerfile · postgres_roles.sql · render.yaml
-scripts/         generate_sample_data.py
+└── infra/       docker-compose · Dockerfile · postgres_roles.sql
+scripts/         generate_sample_data · init_db · deploy_seed · capture_screenshots
 tests/           unit tests for every analytics + reporting module
+render.yaml      Render Blueprint for a free deploy (see DEPLOY.md)
 ```
+
+## Deploy
+
+Host the whole app (dashboard + API) for free on Neon (Postgres) + Render, with
+no Redis required. Step-by-step runbook: [DEPLOY.md](DEPLOY.md).
 
 ## Roadmap
 

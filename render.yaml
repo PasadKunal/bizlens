@@ -1,0 +1,49 @@
+# Render Blueprint for a free BizLens deploy.
+#
+# Uses an external free Postgres (Neon) for a durable database and no Redis
+# (caching is optional and degrades to recompute). Seed the database once from
+# your machine with scripts/deploy_seed.py, then deploy these services. Full
+# runbook: DEPLOY.md.
+#
+# Set DATABASE_URL and ANALYST_DATABASE_URL in the Render dashboard (sync: false)
+# from your Neon connection strings.
+services:
+  - type: web
+    name: bizlens-dashboard
+    runtime: docker
+    plan: free
+    dockerfilePath: ./bizlens/infra/Dockerfile
+    dockerContext: .
+    dockerCommand: gunicorn bizlens.dashboard.app:server --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ANALYST_DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        value: ""
+      - key: EMBED_BACKEND
+        value: local
+      - key: DEV_SCOPED_SCOPE
+        value: BR
+
+  - type: web
+    name: bizlens-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./bizlens/infra/Dockerfile
+    dockerContext: .
+    dockerCommand: uvicorn bizlens.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ANALYST_DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        value: ""
+      - key: EMBED_BACKEND
+        value: local
+      - key: DEV_SCOPED_SCOPE
+        value: BR
+      - key: JWT_SECRET
+        generateValue: true

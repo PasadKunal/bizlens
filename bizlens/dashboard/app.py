@@ -154,6 +154,11 @@ def build_app() -> Dash:
 
 
 app = build_app()
+# Expose the underlying Flask server so a WSGI host (e.g. gunicorn) can serve it:
+#   gunicorn bizlens.dashboard.app:server
+server = app.server
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8050)
+    import os
+
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8050)))

@@ -14,7 +14,7 @@ AI-generated reporting. Think a lightweight, self-hostable Metabase where
 
 ![BizLens dashboard](docs/screenshots/dashboard.png)
 
-<sub>Live dashboard: KPI cards, revenue trend with anomaly detection, a 12-week cohort-retention heatmap, and the conversion funnel - all served from Postgres via Redis-cached queries.</sub>
+<sub>Live dashboard: KPI cards, revenue trend with anomaly detection, a 12-week cohort-retention heatmap, and the conversion funnel - all served from Postgres, with optional Redis caching.</sub>
 
 ---
 
@@ -66,7 +66,7 @@ projects skip.
 
 ### KPI Dashboard
 - DAU/MAU/revenue/churn cards, moving-average trends, and **Welford online anomaly detection** - running mean/variance with *zero stored history* ([`anomaly.py`](bizlens/analytics/anomaly.py)).
-- **Redis caching** for sub-2s dashboard load.
+- **Optional Redis caching** for sub-2s dashboard load (the app runs fine without it, recomputing on each request).
 
 ### Automated Reporting
 - Weekly digest with **GPT-4o narrative summaries** (graceful template fallback with no API key) ([`insight_generator.py`](bizlens/reporting/insight_generator.py)).
@@ -161,7 +161,8 @@ no Redis required. Step-by-step runbook: [DEPLOY.md](DEPLOY.md).
 
 The API and dashboard read through a single data-access layer
 ([`warehouse.py`](bizlens/warehouse.py)) that runs every query under the
-read-only analyst role and caches KPI cards + the revenue trend in Redis.
+read-only analyst role and caches KPI cards + the revenue trend in Redis when
+one is configured.
 
 ```bash
 # with the Docker stack up (postgres + redis):
